@@ -122,6 +122,14 @@ h1{color:#c0392b;font-size:22px;font-weight:800;text-align:center;margin-bottom:
 .rc-error{padding:12px;color:#c62828;font-size:13px;background:#fff8f8}
 @keyframes sp{to{transform:rotate(360deg)}}
 .footer{text-align:center;color:rgba(255,255,255,.7);font-size:12px;padding:4px 0 16px}
+/* Lightbox */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;
+  align-items:center;justify-content:center;padding:16px}
+.lightbox.show{display:flex}
+.lightbox img{max-width:100%;max-height:90vh;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.lightbox-close{position:fixed;top:16px;right:16px;color:#fff;font-size:32px;
+  cursor:pointer;line-height:1;background:rgba(0,0,0,.4);border-radius:50%;
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -152,6 +160,12 @@ h1{color:#c0392b;font-size:22px;font-weight:800;text-align:center;margin-bottom:
     <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
     <div class="progress-text" id="progText">0 / 0</div>
   </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lb" onclick="closeLb()">
+  <div class="lightbox-close" onclick="closeLb()">✕</div>
+  <img id="lbImg" src="" onclick="event.stopPropagation()">
 </div>
 
 <div id="results"></div>
@@ -190,6 +204,8 @@ function addFiles(newFiles){
     const div=document.createElement('div');
     div.className='thumb-item';div.id='thumb-'+idx;
     const img=document.createElement('img');
+    img.style.cursor='zoom-in';
+    img.onclick=e=>{e.stopPropagation();openLb(img.src);};
     const btn=document.createElement('button');
     btn.className='del';btn.textContent='✕';
     btn.onclick=()=>{files[idx]=null;div.remove();updateCount();};
@@ -214,14 +230,19 @@ goBtn.addEventListener('click',async()=>{
   goBtn.disabled=true;results.innerHTML='';
 
   valid.forEach(({f,i})=>{
+    const imgUrl=URL.createObjectURL(f);
     results.innerHTML+=`<div class="card result-card" id="rc-${i}">
-      <div class="rc-header" onclick="toggle(${i})">
-        <img class="rc-thumb" src="${URL.createObjectURL(f)}">
+      <div class="rc-header">
+        <img class="rc-thumb" src="${imgUrl}" onclick="openLb('${imgUrl}')" style="cursor:zoom-in">
         <div class="rc-info">
           <div class="rc-recognized" id="rrec-${i}">识别中...</div>
           <div class="rc-status" id="rstat-${i}">⏳ 等待中</div>
         </div>
-        <span class="rc-toggle" id="rtog-${i}">▼</span>
+        <div class="rc-info" onclick="toggle(${i})" style="cursor:pointer">
+          <div class="rc-recognized" id="rrec-${i}">识别中...</div>
+          <div class="rc-status" id="rstat-${i}">⏳ 等待中</div>
+        </div>
+        <span class="rc-toggle" id="rtog-${i}" onclick="toggle(${i})" style="cursor:pointer">▼</span>
       </div>
       <div class="rc-body" id="rbody-${i}"><div class="rc-loading"><span class="spin"></span>生成中...</div></div>
     </div>`;
@@ -261,6 +282,17 @@ goBtn.addEventListener('click',async()=>{
   goBtn.disabled=false;
   progText.textContent='✅ 全部完成！';
 });
+
+function openLb(src){
+  document.getElementById('lbImg').src=src;
+  document.getElementById('lb').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeLb(){
+  document.getElementById('lb').classList.remove('show');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLb();});
 
 function toggle(i){
   const b=document.getElementById('rbody-'+i),t=document.getElementById('rtog-'+i);
