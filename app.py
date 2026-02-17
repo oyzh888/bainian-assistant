@@ -301,10 +301,27 @@ function toggle(i){
 }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function cp(btn,text){
-  navigator.clipboard.writeText(text).then(()=>{
-    btn.textContent='✅';btn.classList.add('ok');
-    setTimeout(()=>{btn.textContent='复制';btn.classList.remove('ok');},2000);
-  });
+  // Try modern clipboard API first
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(()=>cpDone(btn)).catch(()=>cpFallback(btn,text));
+  } else {
+    cpFallback(btn,text);
+  }
+}
+function cpFallback(btn,text){
+  // Fallback: create a temporary textarea
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+  document.body.appendChild(ta);
+  ta.focus();ta.select();
+  try{document.execCommand('copy');cpDone(btn);}
+  catch(e){btn.textContent='请手动复制';}
+  document.body.removeChild(ta);
+}
+function cpDone(btn){
+  btn.textContent='✅';btn.classList.add('ok');
+  setTimeout(()=>{btn.textContent='复制';btn.classList.remove('ok');},2000);
 }
 </script>
 </body>
